@@ -1,0 +1,112 @@
+复制表
+Sub CreateAttendanceSheets()
+
+    Dim wsTemplate As Worksheet
+    Dim wsList As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim newSheet As Worksheet
+    Dim personName As String
+    Dim personID As String
+    
+    ' 设置模板工作表与名单表
+    Set wsTemplate = ThisWorkbook.Worksheets("勤怠管理")
+    Set wsList = ThisWorkbook.Worksheets("Sheet2")
+    
+    ' 找到名单最后一行（姓名在 A 列）
+    lastRow = wsList.Cells(wsList.Rows.Count, "A").End(xlUp).Row
+    
+    ' 循环每一位人员
+    For i = 2 To lastRow
+        
+        personName = wsList.Cells(i, "A").Value    ' 姓名
+        personID = wsList.Cells(i, "B").Value      ' 编号
+        
+        ' 如果姓名不为空才生成表
+        If personName <> "" Then
+            
+            ' 复制模板到新表
+            wsTemplate.Copy After:=Sheets(Sheets.Count)
+            
+            ' 新建的表自动成为 ActiveSheet
+            Set newSheet = ActiveSheet
+            
+            ' 尝试用姓名命名（如重名避免错误）
+            On Error Resume Next
+            newSheet.Name = personName
+            On Error GoTo 0
+            
+            ' 写入姓名与编号
+            newSheet.Range("Z3").Value = personName
+            newSheet.Range("D3").Value = personID
+            
+        End If
+        
+    Next i
+    
+    MsgBox "所有考勤表已生成完成！", vbInformation
+
+End Sub
+
+
+
+导出为都立表格
+Sub CreateAndSaveAttendanceSheets()
+
+    Dim wsTemplate As Worksheet
+    Dim wsList As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim personName As String
+    Dim personID As String
+    Dim newWB As Workbook     ' 新建的独立工作簿
+    Dim savePath As String
+    Dim newSheet As Worksheet
+    
+    ' 设置模板表与名单表
+    Set wsTemplate = ThisWorkbook.Worksheets("勤怠管理")
+    Set wsList = ThisWorkbook.Worksheets("Sheet2")
+    
+    ' 保存路径（你可以更改）
+    savePath = ThisWorkbook.Path & "\考勤表\"
+    
+    ' 若没有文件夹则自动创建
+    If Dir(savePath, vbDirectory) = "" Then
+        MkDir savePath
+    End If
+    
+    ' 名单最后一行
+    lastRow = wsList.Cells(wsList.Rows.Count, "A").End(xlUp).Row
+    
+    ' 循环所有人员
+    For i = 2 To lastRow
+        
+        personName = wsList.Cells(i, "A").Value
+        personID = wsList.Cells(i, "B").Value
+        
+        If personName <> "" Then
+        
+            ' 复制模板到一个新的工作簿（完全独立）
+            wsTemplate.Copy
+            
+            ' 新复制出来的工作簿
+            Set newWB = ActiveWorkbook
+            Set newSheet = newWB.Sheets(1)
+            
+            ' 写入姓名与编号
+            newSheet.Range("Z3").Value = personName
+            newSheet.Range("D3").Value = personID
+            
+            ' 保存文件（例如：山田太郎_1001.xlsx）
+            newWB.SaveAs Filename:=savePath & personName & "_" & personID & ".xlsx", FileFormat:=xlOpenXMLWorkbook
+            
+            ' 关闭新文件
+            newWB.Close SaveChanges:=False
+            
+        End If
+        
+    Next i
+    
+    MsgBox "所有个人考勤表已生成并成功保存！", vbInformation
+
+End Sub
